@@ -46,6 +46,109 @@ jobs:
             "platforms;android-35" \
             "build-tools;35.0.0"
 
+      - name: Generate OYSHO BUYER Launcher Icons
+        shell: bash
+        run: |
+          python3 -m pip install --user Pillow
+
+          python3 <<'PY'
+          from PIL import Image, ImageDraw
+          from pathlib import Path
+
+          S = 512
+          img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+
+          # Blue gradient background
+          gradient = Image.new("RGBA", (S, S))
+          pixels = gradient.load()
+
+          for y in range(S):
+              for x in range(S):
+                  t = (x + y) / (2 * S)
+                  pixels[x, y] = (
+                      int(30 + 20 * t),
+                      int(64 + 90 * t),
+                      int(175 + 65 * t),
+                      255
+                  )
+
+          mask = Image.new("L", (S, S), 0)
+          md = ImageDraw.Draw(mask)
+          md.rounded_rectangle(
+              (0, 0, S - 1, S - 1),
+              radius=105,
+              fill=255
+          )
+          img.paste(gradient, (0, 0), mask)
+
+          draw = ImageDraw.Draw(img)
+
+          # Shopping bag handle
+          draw.arc(
+              (175, 75, 337, 265),
+              start=180,
+              end=360,
+              fill="white",
+              width=22
+          )
+          draw.line(
+              [(186, 170), (186, 220)],
+              fill="white",
+              width=22
+          )
+          draw.line(
+              [(326, 170), (326, 220)],
+              fill="white",
+              width=22
+          )
+
+          # Shopping bag body
+          draw.rounded_rectangle(
+              (105, 185, 407, 425),
+              radius=35,
+              fill="white"
+          )
+
+          # Blue swoosh
+          draw.polygon(
+              [
+                  (75, 335),
+                  (180, 320),
+                  (280, 265),
+                  (445, 250),
+                  (345, 300),
+                  (210, 385),
+                  (95, 385)
+              ],
+              fill=(37, 145, 255, 255)
+          )
+
+          # Generate Android mipmap resources
+          sizes = {
+              "mipmap-mdpi": 48,
+              "mipmap-hdpi": 72,
+              "mipmap-xhdpi": 96,
+              "mipmap-xxhdpi": 144,
+              "mipmap-xxxhdpi": 192
+          }
+
+          for folder, size in sizes.items():
+              out = Path("app/src/main/res") / folder
+              out.mkdir(parents=True, exist_ok=True)
+
+              icon = img.resize(
+                  (size, size),
+                  Image.Resampling.LANCZOS
+              )
+
+              icon.save(out / "ic_launcher.png")
+              icon.save(out / "ic_launcher_round.png")
+
+              print("Created:", folder, size, "x", size)
+
+          print("OYSHO BUYER launcher icons generated successfully.")
+          PY
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
