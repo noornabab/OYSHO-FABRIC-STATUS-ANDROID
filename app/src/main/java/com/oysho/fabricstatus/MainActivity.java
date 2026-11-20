@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.view.ViewGroup;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.ValueCallback;
@@ -33,28 +34,48 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         webView = new WebView(this);
-        webView.setBackgroundColor(0xFFFFFFFF);
+
+        webView.setLayoutParams(new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+        ));
+
+        webView.setBackgroundColor(0xFF0B171A);
         setContentView(webView);
 
         WebSettings settings = webView.getSettings();
 
+        // JavaScript and storage
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
-        settings.setLoadWithOverviewMode(true);
-        settings.setUseWideViewPort(true);
+
+        // IMPORTANT: Use actual mobile viewport
+        settings.setUseWideViewPort(false);
+        settings.setLoadWithOverviewMode(false);
+
+        // Mobile text and zoom
+        settings.setTextZoom(100);
+        settings.setSupportZoom(false);
+        settings.setBuiltInZoomControls(false);
+        settings.setDisplayZoomControls(false);
+
+        // Browser features
         settings.setJavaScriptCanOpenWindowsAutomatically(true);
         settings.setSupportMultipleWindows(false);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(true);
+
         settings.setMixedContentMode(
                 WebSettings.MIXED_CONTENT_NEVER_ALLOW
         );
 
-        CookieManager.getInstance().setAcceptCookie(true);
-        CookieManager.getInstance()
-                .setAcceptThirdPartyCookies(webView, true);
+        // Cookies
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        cookieManager.setAcceptThirdPartyCookies(webView, true);
 
+        // Website navigation
         webView.setWebViewClient(new WebViewClient() {
 
             @Override
@@ -89,6 +110,7 @@ public class MainActivity extends Activity {
             }
         });
 
+        // File chooser
         webView.setWebChromeClient(new WebChromeClient() {
 
             @Override
@@ -124,6 +146,7 @@ public class MainActivity extends Activity {
             }
         });
 
+        // Download support
         webView.setDownloadListener(
                 (url, userAgent, contentDisposition,
                  mimeType, contentLength) -> {
@@ -172,14 +195,14 @@ public class MainActivity extends Activity {
                         manager.enqueue(request);
 
                         Toast.makeText(
-                                this,
+                                MainActivity.this,
                                 "ডাউনলোড শুরু হয়েছে",
                                 Toast.LENGTH_SHORT
                         ).show();
 
                     } catch (Exception e) {
                         Toast.makeText(
-                                this,
+                                MainActivity.this,
                                 "ডাউনলোড শুরু করা যায়নি",
                                 Toast.LENGTH_LONG
                         ).show();
@@ -187,6 +210,7 @@ public class MainActivity extends Activity {
                 }
         );
 
+        // Load or restore website
         if (savedInstanceState == null) {
             webView.loadUrl(HOME);
         } else {
@@ -203,8 +227,10 @@ public class MainActivity extends Activity {
         if (lower.contains(".xls")) return ".xls";
         if (lower.contains(".csv")) return ".csv";
 
-        if (mime != null && mime.contains("pdf")) {
-            return ".pdf";
+        if (mime != null) {
+            if (mime.contains("pdf")) return ".pdf";
+            if (mime.contains("spreadsheet")) return ".xlsx";
+            if (mime.contains("csv")) return ".csv";
         }
 
         return ".bin";
@@ -260,6 +286,7 @@ public class MainActivity extends Activity {
             webView.setWebChromeClient(null);
             webView.setWebViewClient(null);
             webView.destroy();
+            webView = null;
         }
 
         super.onDestroy();
